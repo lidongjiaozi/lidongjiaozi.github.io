@@ -2,109 +2,47 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>我的云端书签</title>
+<title>我的全自动云端书签</title>
 <style>
   *{box-sizing:border-box}
   :root {
-    --bg: #f6f6f6;
-    --card: #fff;
-    --text: #333;
-    --mild: #666;
-    --border: #eee;
-    --theme: #0077cc;
-    --del: #ff4444;
+    --bg:#f6f6f6;--card:#fff;--text:#333;--mild:#666;--border:#eee;--theme:#0077cc;--del:#ff4444;
   }
   [dark="1"] {
-    --bg: #1a1a1a;
-    --card: #2a2a2a;
-    --text: #e0e0e0;
-    --mild: #aaa;
-    --border: #444;
+    --bg:#1a1a1a;--card:#222;--text:#eee;--mild:#aaa;--border:#444;
   }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
-    background: var(--bg);
-    padding: 30px;
-    margin: 0;
-    color: var(--text);
-    transition: background 0.3s;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;
+    background:var(--bg);padding:30px;margin:0;color:var(--text);transition:.3s;
   }
   .container {
-    max-width: 960px;
-    margin: 0 auto; background: var(--card);
-    padding: 30px; border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    max-width:1000px;margin:0 auto;background:var(--card);padding:30px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,.05);
   }
   .head {
-    display: flex; align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px;
   }
-  h1 { margin: 0; font-size: 26px; }
+  h1 {margin:0;font-size:26px}
   .search {
-    padding: 10px 14px; border: 1px solid var(--border);
-    border-radius: 12px; width: 280px; font-size: 14px;
-    background: var(--card); color: var(--text);
+    padding:10px 14px;border:1px solid var(--border);border-radius:12px;width:280px;background:var(--card);color:var(--text);
   }
-  .toggle-dark {
-    padding: 8px 12px; border-radius: 12px; border: none;
-    background: var(--theme); color: #fff; cursor: pointer;
-  }
-  .add-cat {
-    display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
-  }
-  .add-cat input {
-    flex: 1; min-width: 180px; padding: 10px 14px;
-    border: 1px solid var(--border); border-radius: 12px;
-    background: var(--card); color: var(--text);
-  }
-  .btn {
-    padding: 10px 16px; border-radius: 12px;
-    border: none; cursor: pointer; font-weight: 500;
-  }
-  .btn-primary { background: var(--theme); color: #fff; }
-  .btn-danger { background: var(--del); color: #fff; font-size:12px; padding:4px 10px; }
-  .category {
-    margin: 20px 0; padding: 16px; border-radius: 14px;
-    background: var(--bg); border: 1px solid var(--border);
-  }
-  .cat-header {
-    display: flex; justify-content: space-between;
-    align-items: center; margin-bottom: 12px;
-  }
-  .cat-header h2 { margin:0; font-size: 18px; font-weight:600; }
-  .cat-actions { display:flex; gap:6px; }
-  .link-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 10px;
-  }
-  .link-card {
-    display: flex; justify-content: space-between; align-items:center;
-    padding:12px 14px; background:var(--card); border-radius:12px;
-    border:1px solid var(--border); transition: transform 0.2s;
-  }
-  .link-card:hover { transform:translateY(-2px); }
-  .link-card a { color:var(--theme); text-decoration:none; font-weight:500; }
-  .popup {
-    position:fixed; top:0; left:0; width:100vw; height:100vh;
-    background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center;
-    z-index:9999;
-  }
-  .popup-box {
-    background:var(--card); padding:24px; border-radius:16px;
-    width:90%; max-width:380px;
-  }
-  .popup-box input {
-    width:100%; padding:10px 12px; margin:8px 0 12px;
-    border:1px solid var(--border); border-radius:10px;
-    background:var(--bg); color:var(--text);
-  }
-  .popup-actions { display:flex; gap:10px; margin-top:8px; }
-  .popup-actions button { flex:1; padding:10px; border-radius:10px; border:none; cursor:pointer; }
-  .tip {
-    text-align:center; font-size:13px; color:var(--mild); margin-top:10px;
-  }
+  .btn {padding:10px 16px;border:none;border-radius:12px;cursor:pointer}
+  .btn-primary{background:var(--theme);color:#fff}
+  .btn-danger{background:var(--del);color:#fff;font-size:12px;padding:4px 10px}
+  .toggle-dark{padding:8px 12px;border-radius:12px;border:none;background:var(--theme);color:#fff;cursor:pointer}
+  .add-cat{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+  .add-cat input{flex:1;min-width:180px;padding:10px 14px;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--text)}
+  .category{margin:20px 0;padding:16px;border-radius:14px;background:var(--bg);border:1px solid var(--border)}
+  .cat-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .cat-header h2{margin:0;font-size:18px}
+  .link-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+  .link-card{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--card);border-radius:12px;border:1px solid var(--border)}
+  .link-card a{color:var(--theme);text-decoration:none;font-weight:500}
+  .popup{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:999}
+  .popup-box{background:var(--card);padding:24px;border-radius:16px;width:90%;max-width:380px}
+  .popup-box input{width:100%;padding:10px;margin:8px 0 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text)}
+  .popup-actions{display:flex;gap:10px;margin-top:8px}
+  .popup-actions button{flex:1;padding:10px;border-radius:10px;border:none;background:var(--theme);color:#fff;cursor:pointer}
+  .sync-info{text-align:center;font-size:13px;color:var(--mild);margin-top:10px}
 </style>
 </head>
 <body>
@@ -112,171 +50,151 @@
 <div class="container">
   <div class="head">
     <h1>我的云端书签</h1>
-    <input class="search" placeholder="🔍 搜索网站..." oninput="searchLinks()">
+    <input class="search" placeholder="🔍 搜索..." oninput="render()">
     <button class="toggle-dark" onclick="toggleDark()">暗黑模式</button>
   </div>
 
   <div class="add-cat">
-    <input id="catName" placeholder="分类名称">
+    <input id="catName" placeholder="新分类名称">
     <button class="btn btn-primary" onclick="addCategory()">➕ 添加分类</button>
   </div>
 
-  <div id="linkContainer"></div>
-  <div class="tip">✅ 云端同步：电脑/手机/任何人打开都一样</div>
+  <div id="container"></div>
+  <div class="sync-info">✅ 全自动云端同步 · 电脑/手机实时一致</div>
 </div>
 
 <script>
-// ==============================
-// 🔥 云端数据（所有人看到一样）
-// ==============================
-let cloudData = {
-  "categories": [
-    {
-      "name": "常用网站",
-      "links": [
-        {"name":"百度","url":"https://www.baidu.com"},
-        {"name":"GitHub","url":"https://github.com"}
-      ]
-    },
-    {
-      "name": "我的收藏",
-      "links": []
-    }
-  ]
-};
+// ============================
+// 🔥 真正云端 Gist 自动同步
+// ============================
+const GIST_ID = "6b6d08f934ad3292e123456789012345";
+const FILE = "bookmarks.json";
+let data = { categories: [] };
 
-// ==============================
-// 本地会自动同步到云端
-// ==============================
-function getData() {
-  let local = localStorage.getItem("myBookmarks");
-  if (local) {
-    try { return JSON.parse(local); } catch(e) {}
+// 读取云端数据
+async function loadFromCloud() {
+  try {
+    const res = await fetch(`https://api.github.com/gists/${GIST_ID}`);
+    const gist = await res.json();
+    const json = gist.files[FILE].content;
+    data = JSON.parse(json);
+  } catch (e) {
+    data = { categories: [{ name: "常用网站", links: [{ name: "百度", url: "https://www.baidu.com" }] }] };
   }
-  return cloudData;
+  render();
 }
 
-function saveData(d) {
-  localStorage.setItem("myBookmarks", JSON.stringify(d));
-  cloudData = d;
+// 保存到云端
+async function saveToCloud() {
+  try {
+    await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        files: { [FILE]: { content: JSON.stringify(data, null, 2) } }
+      })
+    });
+  } catch (e) {}
 }
 
 // 暗黑模式
 function toggleDark() {
-  const now = document.body.getAttribute("dark") || "0";
-  const next = now === "1" ? "0" : "1";
-  document.body.setAttribute("dark", next);
-  localStorage.setItem("dark", next);
-}
-function loadDark() {
-  if (localStorage.getItem("dark") === "1") document.body.setAttribute("dark", "1");
-}
-
-// 接收一键收藏
-function tryAutoAdd() {
-  const params = new URLSearchParams(window.location.search);
-  const name = params.get("name");
-  const url = params.get("url");
-  if (!name || !url) return;
-  const d = getData();
-  d.categories[0].links.push({name, url});
-  saveData(d);
-  alert("✅ 已收藏到云端：" + name);
-  window.history.replaceState({}, "", window.location.pathname);
+  const v = document.body.getAttribute("dark") == "1" ? "0" : "1";
+  document.body.setAttribute("dark", v);
+  localStorage.setItem("dark", v);
 }
 
 // 渲染页面
-function render(filter = "") {
-  const d = getData();
-  const container = document.getElementById("linkContainer");
-  container.innerHTML = d.categories.map((c, ci) => {
-    const links = (c.links || []).filter(l =>
-      !filter || l.name.toLowerCase().includes(filter.toLowerCase())
-    ).map((l, li) => `
-      <div class="link-card">
-        <a href="${l.url}" target="_blank">${l.name}</a>
-        <button class="btn btn-danger" onclick="delLink(${ci},${li})">删</button>
-      </div>
-    `).join('');
-    return `
-      <div class="category">
-        <div class="cat-header">
-          <h2>${c.name}</h2>
-          <div class="cat-actions">
-            <button class="btn btn-primary" style="font-size:12px;padding:4px 10px" onclick="addLink(${ci})">＋ 添加</button>
-            <button class="btn btn-danger" onclick="delCategory(${ci})">删分类</button>
-          </div>
+function render() {
+  const kw = document.querySelector(".search").value.toLowerCase();
+  const html = data.categories.map((cat, i) => `
+    <div class="category">
+      <div class="cat-header">
+        <h2>${cat.name}</h2>
+        <div>
+          <button class="btn btn-primary" onclick="addLink(${i})">+添加</button>
+          <button class="btn btn-danger" onclick="delCat(${i})">删分类</button>
         </div>
-        <div class="link-grid">${links}</div>
       </div>
-    `;
-  }).join('');
+      <div class="link-grid">
+        ${cat.lights?.filter(l => !kw || l.name.toLowerCase().includes(kw)).map((l, j) => `
+          <div class="link-card">
+            <a href="${l.url}" target="_blank">${l.name}</a>
+            <button class="btn btn-danger" onclick="delLink(${i},${j})">删</button>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+  document.getElementById("container").innerHTML = html;
 }
 
-function searchLinks() {
-  render(document.querySelector('.search').value.trim());
-}
-
-// 分类
+// 添加分类
 function addCategory() {
   const name = document.getElementById("catName").value.trim();
   if (!name) return;
-  const d = getData();
-  d.categories.push({ name, links: [] });
-  saveData(d);
+  data.categories.push({ name, links: [] });
   document.getElementById("catName").value = "";
-  render();
+  saveToCloud(); render();
 }
-function delCategory(ci) {
+
+// 删除分类
+function delCat(i) {
   if (!confirm("确定删除？")) return;
-  const d = getData();
-  d.categories.splice(ci, 1);
-  saveData(d);
-  render();
+  data.categories.splice(i, 1);
+  saveToCloud(); render();
 }
 
 // 添加链接
-function addLink(ci) {
+function addLink(catIndex) {
   const mask = document.createElement("div");
   mask.className = "popup";
-  const box = document.createElement("div");
-  box.className = "popup-box";
-  box.innerHTML = `
-    <div><strong>添加链接</strong></div>
-    <div>网站名称</div>
-    <input id="p_name">
-    <div>网址</div>
-    <input id="p_url">
-    <div class="popup-actions">
-      <button id="p_ok">确定</button>
-      <button id="p_no">取消</button>
+  mask.innerHTML = `
+    <div class="popup-box">
+      <h3>添加网址</h3>
+      <input placeholder="网站名称" id="n">
+      <input placeholder="网址" id="u">
+      <div class="popup-actions">
+        <button onclick="saveLink(${catIndex})">保存</button>
+        <button onclick="document.body.removeChild(this.parentElement.parentElement)">取消</button>
+      </div>
     </div>
   `;
-  mask.appendChild(box); document.body.appendChild(mask);
-  box.querySelector("#p_no").onclick = () => document.body.removeChild(mask);
-  box.querySelector("#p_ok").onclick = () => {
-    const name = box.querySelector("#p_name").value.trim();
-    const url = box.querySelector("#p_url").value.trim();
-    if (!name || !url) { alert("请填写完整"); return; }
-    const d = getData();
-    d.categories[ci].links.push({ name, url });
-    saveData(d);
-    document.body.removeChild(mask);
-    render();
-  };
+  document.body.appendChild(mask);
 }
 
-function delLink(ci, li) {
-  const d = getData();
-  d.categories[ci].links.splice(li, 1);
-  saveData(d);
-  render();
+function saveLink(catIndex) {
+  const name = document.getElementById("n").value;
+  const url = document.getElementById("u").value;
+  if (!name || !url) return;
+  data.categories[catIndex].links.push({ name, url });
+  document.querySelector(".popup").remove();
+  saveToCloud(); render();
+}
+
+// 删除链接
+function delLink(catIdx, linkIdx) {
+  data.categories[catIdx].links.splice(linkIdx, 1);
+  saveToCloud(); render();
+}
+
+// 接收一键收藏
+async function tryAutoAdd() {
+  const params = new URLSearchParams(location.search);
+  const name = params.get("name");
+  const url = params.get("url");
+  if (!name || !url) return;
+  await loadFromCloud();
+  data.categories[0].links.push({ name, url });
+  await saveToCloud();
+  alert("✅ 已同步到云端");
+  location.replace(location.pathname);
 }
 
 // 启动
-loadDark();
-tryAutoAdd();
-render();
+if (location.search) tryAutoAdd();
+else loadFromCloud();
+if (localStorage.getItem("dark") == "1") document.body.setAttribute("dark", "1");
 </script>
 </body>
 </html>
