@@ -2,78 +2,109 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>我的永久书签</title>
+<title>阿里云同步书签</title>
 <style>
   *{box-sizing:border-box}
   :root {
     --bg:#f6f6f6;--card:#fff;--text:#333;--mild:#666;--border:#eee;--theme:#0077cc;--del:#ff4444;
   }
-  [dark="1"] {
-    --bg:#1a1a1a;--card:#222;--text:#eee;--mild:#aaa;--border:#444;
-  }
   body {
-    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;
+    font-family:"PingFang SC",sans-serif;
     background:var(--bg);padding:30px;margin:0;color:var(--text);
   }
-  .container {
-    max-width:1000px;margin:0 auto;background:var(--card);padding:30px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,0.05);
-  }
-  .head {
-    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px;
-  }
-  h1 {margin:0;font-size:24px}
-  .search {
-    padding:10px 14px;border:1px solid var(--border);border-radius:12px;width:280px;background:var(--card);color:var(--text);
-  }
-  .btn {padding:10px 16px;border:none;border-radius:12px;cursor:pointer}
+  .container{max-width:1000px;margin:0 auto;background:var(--card);padding:30px;border-radius:16px}
+  .head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:20px}
+  h1{margin:0}
+  .search{padding:10px 14px;border:1px solid var(--border);border-radius:12px;width:280px}
+  .btn{padding:10px 16px;border:none;border-radius:12px;cursor:pointer}
   .btn-primary{background:var(--theme);color:#fff}
   .btn-danger{background:var(--del);color:#fff;font-size:12px;padding:4px 10px}
-  .toggle-dark{padding:8px 12px;border-radius:12px;border:none;background:var(--theme);color:#fff}
   .add-cat{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
-  .add-cat input{flex:1;min-width:180px;padding:10px 14px;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--text)}
+  .add-cat input{flex:1;min-width:180px;padding:10px 14px;border:1px solid var(--border);border-radius:12px}
   .category{margin:20px 0;padding:16px;border-radius:14px;background:var(--bg);border:1px solid var(--border)}
   .cat-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
   .link-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
   .link-card{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--card);border-radius:12px;border:1px solid var(--border)}
   .link-card a{color:var(--theme);text-decoration:none;font-weight:500}
-  .popup{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999}
+  .popup{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center}
   .popup-box{background:var(--card);padding:24px;border-radius:16px;width:90%;max-width:380px}
-  .popup-box input{width:100%;padding:10px;margin:8px 0 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text)}
-  .popup-actions{display:flex;gap:10px;margin-top:8px}
+  .popup-box input{width:100%;padding:10px;margin:8px 0 12px;border:1px solid var(--border);border-radius:10px}
+  .popup-actions{display:flex;gap:10px}
   .tip{text-align:center;font-size:13px;color:var(--mild);margin-top:10px}
 </style>
 </head>
 <body>
-
 <div class="container">
   <div class="head">
-    <h1>我的永久书签</h1>
+    <h1>阿里云同步书签</h1>
     <input class="search" placeholder="🔍 搜索..." oninput="render()">
-    <button class="toggle-dark" onclick="toggleDark()">暗黑模式</button>
+    <button class="btn btn-primary" onclick="syncFromCloud()">🔄 从云端刷新</button>
   </div>
 
   <div class="add-cat">
     <input id="catName" placeholder="分类名称">
     <button class="btn btn-primary" onclick="addCategory()">➕ 添加分类</button>
-    <button class="btn btn-primary" onclick="exportData()">💾 导出备份</button>
   </div>
 
   <div id="box"></div>
-  <div class="tip">✅ 刷新不丢失 · 拖入文件即可导入所有数据</div>
+  <div class="tip">✅ 数据存在阿里云 · 电脑手机实时同步</div>
 </div>
 
 <script>
-// 本地永久存储（100%稳定）
-let data = JSON.parse(localStorage.getItem("myBookmarks") || '{"categories":[{"name":"常用网站","links":[{"name":"百度","url":"https://www.baidu.com"}]}]}');
+// ============ 阿里云OSS配置（改成你自己的！）============
+const OSS_CONFIG = {
+  region: "oss-cn-shenzhen",     // 你的地域（如oss-cn-shenzhen）
+  bucket: "my-bookmarks-2026",  // 你的Bucket名
+  accessKeyId: "LTAI5tMj5cmCZafERdcy8766",
+  accessKeySecret: "5lM25U93cx47WsXel4BCVCIiZNdPyu",
+  fileName: "bookmarks.json"     // 云端保存的文件名
+};
+// =========================================================
 
-function save() {
-  localStorage.setItem("myBookmarks", JSON.stringify(data));
-  render();
+let data = { categories: [{ name: "常用网站", links: [{ name: "百度", url: "https://www.baidu.com" }] }] };
+
+// 引入阿里云OSS SDK（浏览器版）
+(function(){var a=document.createElement("script");a.src="https://gosspublic.alicdn.com/aliyun-oss-sdk-6.18.0.min.js";document.head.appendChild(a);})();
+
+// 等待SDK加载后初始化
+async function initOSS(){
+  while(!window.OSS)await new Promise(r=>setTimeout(r,100));
+  const client=new OSS.Wrapper({
+    region:OSS_CONFIG.region,
+    accessKeyId:OSS_CONFIG.accessKeyId,
+    accessKeySecret:OSS_CONFIG.accessKeySecret,
+    bucket:OSS_CONFIG.bucket,
+    secure:true
+  });
+  window.ossClient=client;
+  await syncFromCloud();// 打开自动拉云端
 }
 
-function render() {
-  const kw = document.querySelector(".search").value.toLowerCase();
-  document.getElementById("box").innerHTML = data.categories.map((c, i) => `
+// 从云端下载
+async function syncFromCloud(){
+  try{
+    const res=await window.ossClient.get(OSS_CONFIG.fileName);
+    data=JSON.parse(res.content.toString());
+    render();
+  }catch(e){
+    console.log("云端无文件，用默认数据");
+    render();
+  }
+}
+
+// 保存到云端
+async function saveToCloud(){
+  try{
+    await window.ossClient.put(OSS_CONFIG.fileName,JSON.stringify(data,null,2));
+  }catch(e){
+    alert("同步失败："+e.message);
+  }
+}
+
+// 渲染
+function render(){
+  const kw=document.querySelector(".search").value.toLowerCase();
+  document.getElementById("box").innerHTML=data.categories.map((c,i)=>`
     <div class="category">
       <div class="cat-header">
         <h2>${c.name}</h2>
@@ -83,7 +114,7 @@ function render() {
         </div>
       </div>
       <div class="link-grid">
-        ${c.links.filter(l => !kw || l.name.toLowerCase().includes(kw)).map((l, j) => `
+        ${c.links.filter(l=>!kw||l.name.toLowerCase().includes(kw)).map((l,j)=>`
           <div class="link-card">
             <a href="${l.url}" target="_blank">${l.name}</a>
             <button class="btn btn-danger" onclick="delLink(${i},${j})">删</button>
@@ -94,100 +125,50 @@ function render() {
   `).join("");
 }
 
-function toggleDark() {
-  const v = document.body.getAttribute("dark") == "1" ? "0" : "1";
-  document.body.setAttribute("dark", v);
-  localStorage.setItem("dark", v);
+// 分类
+function addCategory(){
+  const name=document.getElementById("catName").value.trim();
+  if(!name)return;
+  data.categories.push({name,links:[]});
+  document.getElementById("catName").value="";
+  render();saveToCloud();
+}
+function delCat(i){
+  if(!confirm("确定删除？"))return;
+  data.categories.splice(i,1);
+  render();saveToCloud();
 }
 
-function addCategory() {
-  const name = document.getElementById("catName").value.trim();
-  if (!name) return;
-  data.categories.push({ name, links: [] });
-  document.getElementById("catName").value = "";
-  save();
-}
-
-function delCat(i) {
-  if (!confirm("确定删除分类？")) return;
-  data.categories.splice(i, 1);
-  save();
-}
-
-function addLink(i) {
-  const p = document.createElement("div");
-  p.className = "popup";
-  p.innerHTML = `
+// 链接
+function addLink(i){
+  const p=document.createElement("div");p.className="popup";
+  p.innerHTML=`
   <div class="popup-box">
     <h3>添加网址</h3>
-    <input placeholder="网站名称" id="na">
-    <input placeholder="网址（https://...）" id="ur">
+    <input placeholder="名称" id="na">
+    <input placeholder="网址" id="ur">
     <div class="popup-actions">
-      <button onclick="saveLink(${i})">保存</button>
-      <button onclick="p.remove()">取消</button>
+      <button class="btn btn-primary" onclick="saveLink(${i})">保存</button>
+      <button class="btn btn-danger" onclick="p.remove()">取消</button>
     </div>
   </div>`;
   document.body.appendChild(p);
 }
-
-function saveLink(i) {
-  const n = document.getElementById("na").value.trim();
-  const u = document.getElementById("ur").value.trim();
-  if (!n || !u) return alert("请填写完整！");
-  data.categories[i].links.push({ name: n, url: u });
+function saveLink(i){
+  const n=document.getElementById("na").value.trim();
+  const u=document.getElementById("ur").value.trim();
+  if(!n||!u)return;
+  data.categories[i].links.push({name:n,url:u});
   document.querySelector(".popup").remove();
-  save();
+  render();saveToCloud();
 }
-
-function delLink(i, j) {
-  data.categories[i].links.splice(j, 1);
-  save();
-}
-
-// 导出备份
-function exportData() {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "bookmarks.json";
-  a.click();
-}
-
-// 拖入导入
-document.addEventListener("dragover", e => e.preventDefault());
-document.addEventListener("drop", e => {
-  e.preventDefault();
-  const f = e.dataTransfer.files[0];
-  if (!f) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      data = JSON.parse(e.target.result);
-      save();
-      alert("✅ 导入成功！");
-    } catch (e) {
-      alert("❌ 文件格式错误");
-    }
-  };
-  reader.readAsText(f);
-});
-
-// 一键收藏
-const params = new URLSearchParams(location.search);
-const name = params.get("name");
-const url = params.get("url");
-if (name && url) {
-  data.categories[0].links.push({ name, url });
-  save();
-  alert("✅ 已收藏");
-  location.replace(location.pathname);
+function delLink(i,j){
+  data.categories[i].links.splice(j,1);
+  render();saveToCloud();
 }
 
 // 初始化
-if (localStorage.getItem("dark") === "1") {
-  document.body.setAttribute("dark", "1");
-}
-render();
+initOSS();
 </script>
 </body>
 </html>
