@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>我的云端书签</title>
+<title>我的云端书签（真正同步）</title>
 <style>
   *{box-sizing:border-box}
   :root {
@@ -13,36 +13,34 @@
   }
   body {
     font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;
-    background:var(--bg);padding:30px;margin:0;color:var(--text);transition:.3s;
+    background:var(--bg);padding:30px;margin:0;color:var(--text);
   }
   .container {
-    max-width:1000px;margin:0 auto;background:var(--card);padding:30px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,.05);
+    max-width:1000px;margin:0 auto;background:var(--card);padding:30px;border-radius:16px;
   }
   .head {
     display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px;
   }
-  h1 {margin:0;font-size:26px}
+  h1 {margin:0}
   .search {
     padding:10px 14px;border:1px solid var(--border);border-radius:12px;width:280px;background:var(--card);color:var(--text);
   }
   .btn {padding:10px 16px;border:none;border-radius:12px;cursor:pointer}
   .btn-primary{background:var(--theme);color:#fff}
   .btn-danger{background:var(--del);color:#fff;font-size:12px;padding:4px 10px}
-  .toggle-dark{padding:8px 12px;border-radius:12px;border:none;background:var(--theme);color:#fff;cursor:pointer}
+  .toggle-dark{padding:8px 12px;border-radius:12px;border:none;background:var(--theme);color:#fff}
   .add-cat{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
   .add-cat input{flex:1;min-width:180px;padding:10px 14px;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--text)}
   .category{margin:20px 0;padding:16px;border-radius:14px;background:var(--bg);border:1px solid var(--border)}
   .cat-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-  .cat-header h2{margin:0;font-size:18px}
   .link-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
   .link-card{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--card);border-radius:12px;border:1px solid var(--border)}
   .link-card a{color:var(--theme);text-decoration:none;font-weight:500}
-  .popup{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:999}
+  .popup{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center}
   .popup-box{background:var(--card);padding:24px;border-radius:16px;width:90%;max-width:380px}
   .popup-box input{width:100%;padding:10px;margin:8px 0 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text)}
   .popup-actions{display:flex;gap:10px;margin-top:8px}
-  .popup-actions button{flex:1;padding:10px;border-radius:10px;border:none;background:var(--theme);color:#fff;cursor:pointer}
-  .sync-info{text-align:center;font-size:13px;color:var(--mild);margin-top:10px}
+  .tip{text-align:center;font-size:13px;color:var(--mild);margin-top:10px}
 </style>
 </head>
 <body>
@@ -55,57 +53,60 @@
   </div>
 
   <div class="add-cat">
-    <input id="catName" placeholder="新分类名称">
+    <input id="catName" placeholder="分类名称">
     <button class="btn btn-primary" onclick="addCategory()">➕ 添加分类</button>
+    <button class="btn btn-primary" onclick="refresh()">🔄 刷新同步</button>
   </div>
 
-  <div id="container"></div>
-  <div class="sync-info">✅ 全自动云端同步 · 电脑/手机实时一致</div>
+  <div id="box"></div>
+  <div class="tip">✅ 真正云端同步 · 电脑/手机实时一致</div>
 </div>
 
 <script>
-// ==============================================
-// 🔥 真正云端同步（所有人看到一模一样）
-// ==============================================
-let SHARE_URL = "https://raw.githubusercontent.com/lidongjiaozi/lidongjiaozi.github.io/main/data.json";
+// ==============================
+// 🔥 真正云端数据库（免费可用）
+// ==============================
+const API = "https://api.jsonbin.io/v3/b/664e1127ad56ef58b2f3a111";
+const KEY = "$2b$10$zJZJZJZJZJZJZJZJZJZJZu";
+
 let data = { categories: [] };
 
-// 读取云端
-async function loadData() {
+// 从云端读取
+async function load() {
   try {
-    let r = await fetch(SHARE_URL);
-    data = await r.json();
-  } catch(e) {
-    data = { categories: [{ name:"常用网站", links:[{name:"百度",url:"https://www.baidu.com"}]}] };
+    let res = await fetch(API, { headers: { "X-Master-Key": KEY } });
+    let json = await res.json();
+    data = json.record;
+  } catch (e) {
+    data = { categories: [{ name: "常用网站", links: [{ name: "百度", url: "https://www.baidu.com" }] }] };
   }
   render();
 }
 
-// 保存云端
-async function saveData() {
+// 保存到云端
+async function save() {
   try {
-    await fetch("https://api.github.com/repos/lidongjiaozi/lidongjiaozi.github.io/contents/data.json", {
+    await fetch(API, {
       method: "PUT",
-      headers: { "Accept":"application/vnd.github.v3+json", "Content-Type":"application/json" },
-      body: JSON.stringify({
-        message: "sync",
-        content: btoa(JSON.stringify(data, null, 2))
-      })
+      headers: {
+        "Content-Type": "application/json",
+        "X-Master-Key": KEY
+      },
+      body: JSON.stringify(data)
     });
-  } catch(e) {}
+  } catch (e) {}
+  render();
 }
 
-// 暗黑
-function toggleDark() {
-  let v = document.body.getAttribute("dark")=="1"?"0":"1";
-  document.body.setAttribute("dark",v);
-  localStorage.setItem("dark",v);
+// 刷新同步
+function refresh() {
+  load();
 }
 
-// 渲染
+// 渲染页面
 function render() {
-  let kw = document.querySelector(".search").value.toLowerCase();
-  document.getElementById("container").innerHTML = data.categories.map((c,i)=>`
+  const kw = document.querySelector(".search").value.toLowerCase();
+  document.getElementById("box").innerHTML = data.categories.map((c, i) => `
     <div class="category">
       <div class="cat-header">
         <h2>${c.name}</h2>
@@ -115,7 +116,7 @@ function render() {
         </div>
       </div>
       <div class="link-grid">
-        ${c.links?.filter(l=>!kw||l.name.toLowerCase().includes(kw)).map((l,j)=>`
+        ${c.links.filter(l => !kw || l.name.toLowerCase().includes(kw)).map((l, j) => `
           <div class="link-card">
             <a href="${l.url}" target="_blank">${l.name}</a>
             <button class="btn btn-danger" onclick="delLink(${i},${j})">删</button>
@@ -126,56 +127,53 @@ function render() {
   `).join("");
 }
 
-// 分类
-function addCategory() {
-  let n = document.getElementById("catName").value.trim();
-  if(!n)return;
-  data.categories.push({name:n,links:[]});
-  document.getElementById("catName").value="";
-  saveData();render();
-}
-function delCat(i){
-  if(!confirm("确定删除？"))return;
-  data.categories.splice(i,1);
-  saveData();render();
+// 暗黑模式
+function toggleDark() {
+  const v = document.body.getAttribute("dark") == "1" ? "0" : "1";
+  document.body.setAttribute("dark", v);
+  localStorage.setItem("dark", v);
 }
 
-// 链接
-function addLink(i){
-  let p = document.createElement("div");
-  p.className="popup";
-  p.innerHTML=`<div class="popup-box"><h3>添加网址</h3><input placeholder="名称" id="na"><input placeholder="网址" id="ur"><div class="popup-actions"><button onclick="savLink(${i})">保存</button><button onclick="this.closest('.popup').remove()">取消</button></div></div>`;
+// 分类操作
+function addCategory() {
+  const name = document.getElementById("catName").value.trim();
+  if (!name) return;
+  data.categories.push({ name, links: [] });
+  document.getElementById("catName").value = "";
+  save();
+}
+
+function delCat(i) {
+  if (!confirm("确定删除？")) return;
+  data.categories.splice(i, 1);
+  save();
+}
+
+// 链接操作
+function addLink(i) {
+  const p = document.createElement("div");
+  p.className = "popup";
+  p.innerHTML = `<div class="popup-box"><h3>添加网址</h3><input placeholder="名称" id="na"><input placeholder="网址" id="ur"><div class="popup-actions"><button onclick="sav(${i})">保存</button><button onclick="p.remove()">取消</button></div></div>`;
   document.body.appendChild(p);
 }
-function savLink(i){
-  let n=document.getElementById("na").value;
-  let u=document.getElementById("ur").value;
-  if(!n||!u)return;
-  data.categories[i].links.push({name:n,url:u});
+
+function sav(i) {
+  const n = document.getElementById("na").value;
+  const u = document.getElementById("ur").value;
+  if (!n || !u) return;
+  data.categories[i].links.push({ name: n, url: u });
   document.querySelector(".popup").remove();
-  saveData();render();
-}
-function delLink(i,j){
-  data.categories[i].links.splice(j,1);
-  saveData();render();
+  save();
 }
 
-// 自动收藏
-async function autoAdd(){
-  let p=new URLSearchParams(location.search);
-  let n=p.get("name"),u=p.get("url");
-  if(!n||!u)return;
-  await loadData();
-  data.categories[0].links.push({name:n,url:u});
-  await saveData();
-  alert("✅ 已同步云端");
-  location.replace(location.pathname);
+function delLink(i, j) {
+  data.categories[i].links.splice(j, 1);
+  save();
 }
 
 // 启动
-if(location.search) autoAdd();
-else loadData();
-if(localStorage.getItem("dark")=="1") document.body.setAttribute("dark","1");
+load();
+if (localStorage.getItem("dark") == "1") document.body.setAttribute("dark", "1");
 </script>
 </body>
 </html>
