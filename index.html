@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>我的全自动云端书签</title>
+<title>我的云端书签</title>
 <style>
   *{box-sizing:border-box}
   :root {
@@ -64,60 +64,58 @@
 </div>
 
 <script>
-// ============================
-// 🔥 真正云端 Gist 自动同步
-// ============================
-const GIST_ID = "6b6d08f934ad3292e123456789012345";
-const FILE = "bookmarks.json";
+// ==============================================
+// 🔥 真正云端同步（所有人看到一模一样）
+// ==============================================
+let SHARE_URL = "https://raw.githubusercontent.com/lidongjiaozi/lidongjiaozi.github.io/main/data.json";
 let data = { categories: [] };
 
-// 读取云端数据
-async function loadFromCloud() {
+// 读取云端
+async function loadData() {
   try {
-    const res = await fetch(`https://api.github.com/gists/${GIST_ID}`);
-    const gist = await res.json();
-    const json = gist.files[FILE].content;
-    data = JSON.parse(json);
-  } catch (e) {
-    data = { categories: [{ name: "常用网站", links: [{ name: "百度", url: "https://www.baidu.com" }] }] };
+    let r = await fetch(SHARE_URL);
+    data = await r.json();
+  } catch(e) {
+    data = { categories: [{ name:"常用网站", links:[{name:"百度",url:"https://www.baidu.com"}]}] };
   }
   render();
 }
 
-// 保存到云端
-async function saveToCloud() {
+// 保存云端
+async function saveData() {
   try {
-    await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+    await fetch("https://api.github.com/repos/lidongjiaozi/lidongjiaozi.github.io/contents/data.json", {
+      method: "PUT",
+      headers: { "Accept":"application/vnd.github.v3+json", "Content-Type":"application/json" },
       body: JSON.stringify({
-        files: { [FILE]: { content: JSON.stringify(data, null, 2) } }
+        message: "sync",
+        content: btoa(JSON.stringify(data, null, 2))
       })
     });
-  } catch (e) {}
+  } catch(e) {}
 }
 
-// 暗黑模式
+// 暗黑
 function toggleDark() {
-  const v = document.body.getAttribute("dark") == "1" ? "0" : "1";
-  document.body.setAttribute("dark", v);
-  localStorage.setItem("dark", v);
+  let v = document.body.getAttribute("dark")=="1"?"0":"1";
+  document.body.setAttribute("dark",v);
+  localStorage.setItem("dark",v);
 }
 
-// 渲染页面
+// 渲染
 function render() {
-  const kw = document.querySelector(".search").value.toLowerCase();
-  const html = data.categories.map((cat, i) => `
+  let kw = document.querySelector(".search").value.toLowerCase();
+  document.getElementById("container").innerHTML = data.categories.map((c,i)=>`
     <div class="category">
       <div class="cat-header">
-        <h2>${cat.name}</h2>
+        <h2>${c.name}</h2>
         <div>
           <button class="btn btn-primary" onclick="addLink(${i})">+添加</button>
           <button class="btn btn-danger" onclick="delCat(${i})">删分类</button>
         </div>
       </div>
       <div class="link-grid">
-        ${cat.lights?.filter(l => !kw || l.name.toLowerCase().includes(kw)).map((l, j) => `
+        ${c.links?.filter(l=>!kw||l.name.toLowerCase().includes(kw)).map((l,j)=>`
           <div class="link-card">
             <a href="${l.url}" target="_blank">${l.name}</a>
             <button class="btn btn-danger" onclick="delLink(${i},${j})">删</button>
@@ -126,75 +124,58 @@ function render() {
       </div>
     </div>
   `).join("");
-  document.getElementById("container").innerHTML = html;
 }
 
-// 添加分类
+// 分类
 function addCategory() {
-  const name = document.getElementById("catName").value.trim();
-  if (!name) return;
-  data.categories.push({ name, links: [] });
-  document.getElementById("catName").value = "";
-  saveToCloud(); render();
+  let n = document.getElementById("catName").value.trim();
+  if(!n)return;
+  data.categories.push({name:n,links:[]});
+  document.getElementById("catName").value="";
+  saveData();render();
+}
+function delCat(i){
+  if(!confirm("确定删除？"))return;
+  data.categories.splice(i,1);
+  saveData();render();
 }
 
-// 删除分类
-function delCat(i) {
-  if (!confirm("确定删除？")) return;
-  data.categories.splice(i, 1);
-  saveToCloud(); render();
+// 链接
+function addLink(i){
+  let p = document.createElement("div");
+  p.className="popup";
+  p.innerHTML=`<div class="popup-box"><h3>添加网址</h3><input placeholder="名称" id="na"><input placeholder="网址" id="ur"><div class="popup-actions"><button onclick="savLink(${i})">保存</button><button onclick="this.closest('.popup').remove()">取消</button></div></div>`;
+  document.body.appendChild(p);
 }
-
-// 添加链接
-function addLink(catIndex) {
-  const mask = document.createElement("div");
-  mask.className = "popup";
-  mask.innerHTML = `
-    <div class="popup-box">
-      <h3>添加网址</h3>
-      <input placeholder="网站名称" id="n">
-      <input placeholder="网址" id="u">
-      <div class="popup-actions">
-        <button onclick="saveLink(${catIndex})">保存</button>
-        <button onclick="document.body.removeChild(this.parentElement.parentElement)">取消</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(mask);
-}
-
-function saveLink(catIndex) {
-  const name = document.getElementById("n").value;
-  const url = document.getElementById("u").value;
-  if (!name || !url) return;
-  data.categories[catIndex].links.push({ name, url });
+function savLink(i){
+  let n=document.getElementById("na").value;
+  let u=document.getElementById("ur").value;
+  if(!n||!u)return;
+  data.categories[i].links.push({name:n,url:u});
   document.querySelector(".popup").remove();
-  saveToCloud(); render();
+  saveData();render();
+}
+function delLink(i,j){
+  data.categories[i].links.splice(j,1);
+  saveData();render();
 }
 
-// 删除链接
-function delLink(catIdx, linkIdx) {
-  data.categories[catIdx].links.splice(linkIdx, 1);
-  saveToCloud(); render();
-}
-
-// 接收一键收藏
-async function tryAutoAdd() {
-  const params = new URLSearchParams(location.search);
-  const name = params.get("name");
-  const url = params.get("url");
-  if (!name || !url) return;
-  await loadFromCloud();
-  data.categories[0].links.push({ name, url });
-  await saveToCloud();
-  alert("✅ 已同步到云端");
+// 自动收藏
+async function autoAdd(){
+  let p=new URLSearchParams(location.search);
+  let n=p.get("name"),u=p.get("url");
+  if(!n||!u)return;
+  await loadData();
+  data.categories[0].links.push({name:n,url:u});
+  await saveData();
+  alert("✅ 已同步云端");
   location.replace(location.pathname);
 }
 
 // 启动
-if (location.search) tryAutoAdd();
-else loadFromCloud();
-if (localStorage.getItem("dark") == "1") document.body.setAttribute("dark", "1");
+if(location.search) autoAdd();
+else loadData();
+if(localStorage.getItem("dark")=="1") document.body.setAttribute("dark","1");
 </script>
 </body>
 </html>
