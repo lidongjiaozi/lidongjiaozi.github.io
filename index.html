@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>我的云端书签（真正同步）</title>
+<title>我的永久书签</title>
 <style>
   *{box-sizing:border-box}
   :root {
@@ -16,12 +16,12 @@
     background:var(--bg);padding:30px;margin:0;color:var(--text);
   }
   .container {
-    max-width:1000px;margin:0 auto;background:var(--card);padding:30px;border-radius:16px;
+    max-width:1000px;margin:0 auto;background:var(--card);padding:30px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,0.05);
   }
   .head {
     display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px;
   }
-  h1 {margin:0}
+  h1 {margin:0;font-size:24px}
   .search {
     padding:10px 14px;border:1px solid var(--border);border-radius:12px;width:280px;background:var(--card);color:var(--text);
   }
@@ -36,7 +36,7 @@
   .link-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
   .link-card{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--card);border-radius:12px;border:1px solid var(--border)}
   .link-card a{color:var(--theme);text-decoration:none;font-weight:500}
-  .popup{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center}
+  .popup{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999}
   .popup-box{background:var(--card);padding:24px;border-radius:16px;width:90%;max-width:380px}
   .popup-box input{width:100%;padding:10px;margin:8px 0 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text)}
   .popup-actions{display:flex;gap:10px;margin-top:8px}
@@ -47,7 +47,7 @@
 
 <div class="container">
   <div class="head">
-    <h1>我的云端书签</h1>
+    <h1>我的永久书签</h1>
     <input class="search" placeholder="🔍 搜索..." oninput="render()">
     <button class="toggle-dark" onclick="toggleDark()">暗黑模式</button>
   </div>
@@ -55,55 +55,22 @@
   <div class="add-cat">
     <input id="catName" placeholder="分类名称">
     <button class="btn btn-primary" onclick="addCategory()">➕ 添加分类</button>
-    <button class="btn btn-primary" onclick="refresh()">🔄 刷新同步</button>
+    <button class="btn btn-primary" onclick="exportData()">💾 导出备份</button>
   </div>
 
   <div id="box"></div>
-  <div class="tip">✅ 真正云端同步 · 电脑/手机实时一致</div>
+  <div class="tip">✅ 刷新不丢失 · 拖入文件即可导入所有数据</div>
 </div>
 
 <script>
-// ==============================
-// 🔥 真正云端数据库（免费可用）
-// ==============================
-const API = "https://api.jsonbin.io/v3/b/664e1127ad56ef58b2f3a111";
-const KEY = "$2b$10$zJZJZJZJZJZJZJZJZJZJZu";
+// 本地永久存储（100%稳定）
+let data = JSON.parse(localStorage.getItem("myBookmarks") || '{"categories":[{"name":"常用网站","links":[{"name":"百度","url":"https://www.baidu.com"}]}]}');
 
-let data = { categories: [] };
-
-// 从云端读取
-async function load() {
-  try {
-    let res = await fetch(API, { headers: { "X-Master-Key": KEY } });
-    let json = await res.json();
-    data = json.record;
-  } catch (e) {
-    data = { categories: [{ name: "常用网站", links: [{ name: "百度", url: "https://www.baidu.com" }] }] };
-  }
+function save() {
+  localStorage.setItem("myBookmarks", JSON.stringify(data));
   render();
 }
 
-// 保存到云端
-async function save() {
-  try {
-    await fetch(API, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Master-Key": KEY
-      },
-      body: JSON.stringify(data)
-    });
-  } catch (e) {}
-  render();
-}
-
-// 刷新同步
-function refresh() {
-  load();
-}
-
-// 渲染页面
 function render() {
   const kw = document.querySelector(".search").value.toLowerCase();
   document.getElementById("box").innerHTML = data.categories.map((c, i) => `
@@ -116,7 +83,7 @@ function render() {
         </div>
       </div>
       <div class="link-grid">
-        ${(c.links || []).filter(l => !kw || l.name.toLowerCase().includes(kw)).map((l, j) => `
+        ${c.links.filter(l => !kw || l.name.toLowerCase().includes(kw)).map((l, j) => `
           <div class="link-card">
             <a href="${l.url}" target="_blank">${l.name}</a>
             <button class="btn btn-danger" onclick="delLink(${i},${j})">删</button>
@@ -127,14 +94,12 @@ function render() {
   `).join("");
 }
 
-// 暗黑模式
 function toggleDark() {
   const v = document.body.getAttribute("dark") == "1" ? "0" : "1";
   document.body.setAttribute("dark", v);
   localStorage.setItem("dark", v);
 }
 
-// 分类操作
 function addCategory() {
   const name = document.getElementById("catName").value.trim();
   if (!name) return;
@@ -144,24 +109,31 @@ function addCategory() {
 }
 
 function delCat(i) {
-  if (!confirm("确定删除？")) return;
+  if (!confirm("确定删除分类？")) return;
   data.categories.splice(i, 1);
   save();
 }
 
-// 链接操作
 function addLink(i) {
   const p = document.createElement("div");
   p.className = "popup";
-  p.innerHTML = `<div class="popup-box"><h3>添加网址</h3><input placeholder="名称" id="na"><input placeholder="网址" id="ur"><div class="popup-actions"><button onclick="sav(${i})">保存</button><button onclick="p.remove()">取消</button></div></div>`;
+  p.innerHTML = `
+  <div class="popup-box">
+    <h3>添加网址</h3>
+    <input placeholder="网站名称" id="na">
+    <input placeholder="网址（https://...）" id="ur">
+    <div class="popup-actions">
+      <button onclick="saveLink(${i})">保存</button>
+      <button onclick="p.remove()">取消</button>
+    </div>
+  </div>`;
   document.body.appendChild(p);
 }
 
-function sav(i) {
-  const n = document.getElementById("na").value;
-  const u = document.getElementById("ur").value;
-  if (!n || !u) return;
-  if (!data.categories[i].links) data.categories[i].links = [];
+function saveLink(i) {
+  const n = document.getElementById("na").value.trim();
+  const u = document.getElementById("ur").value.trim();
+  if (!n || !u) return alert("请填写完整！");
   data.categories[i].links.push({ name: n, url: u });
   document.querySelector(".popup").remove();
   save();
@@ -172,9 +144,50 @@ function delLink(i, j) {
   save();
 }
 
-// 启动
-load();
-if (localStorage.getItem("dark") == "1") document.body.setAttribute("dark", "1");
+// 导出备份
+function exportData() {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "bookmarks.json";
+  a.click();
+}
+
+// 拖入导入
+document.addEventListener("dragover", e => e.preventDefault());
+document.addEventListener("drop", e => {
+  e.preventDefault();
+  const f = e.dataTransfer.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      data = JSON.parse(e.target.result);
+      save();
+      alert("✅ 导入成功！");
+    } catch (e) {
+      alert("❌ 文件格式错误");
+    }
+  };
+  reader.readAsText(f);
+});
+
+// 一键收藏
+const params = new URLSearchParams(location.search);
+const name = params.get("name");
+const url = params.get("url");
+if (name && url) {
+  data.categories[0].links.push({ name, url });
+  save();
+  alert("✅ 已收藏");
+  location.replace(location.pathname);
+}
+
+// 初始化
+if (localStorage.getItem("dark") === "1") {
+  document.body.setAttribute("dark", "1");
+}
+render();
 </script>
 </body>
 </html>
