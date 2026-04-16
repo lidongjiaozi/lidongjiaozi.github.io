@@ -116,7 +116,7 @@ function render() {
         </div>
       </div>
       <div class="link-grid">
-        ${c.links.filter(l => !kw || l.name.toLowerCase().includes(kw)).map((l, j) => `
+        ${(c.links || []).filter(l => !kw || l.name.toLowerCase().includes(kw)).map((l, j) => `
           <div class="link-card">
             <a href="${l.url}" target="_blank">${l.name}</a>
             <button class="btn btn-danger" onclick="delLink(${i},${j})">删</button>
@@ -161,6 +161,7 @@ function sav(i) {
   const n = document.getElementById("na").value;
   const u = document.getElementById("ur").value;
   if (!n || !u) return;
+  if (!data.categories[i].links) data.categories[i].links = [];
   data.categories[i].links.push({ name: n, url: u });
   document.querySelector(".popup").remove();
   save();
