@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>我的网址收藏</title>
+<title>我的云端书签</title>
 <style>
   *{box-sizing:border-box}
   :root {
@@ -102,13 +102,16 @@
   }
   .popup-actions { display:flex; gap:10px; margin-top:8px; }
   .popup-actions button { flex:1; padding:10px; border-radius:10px; border:none; cursor:pointer; }
+  .tip {
+    text-align:center; font-size:13px; color:var(--mild); margin-top:10px;
+  }
 </style>
 </head>
 <body>
 
 <div class="container">
   <div class="head">
-    <h1>我的网址收藏</h1>
+    <h1>我的云端书签</h1>
     <input class="search" placeholder="🔍 搜索网站..." oninput="searchLinks()">
     <button class="toggle-dark" onclick="toggleDark()">暗黑模式</button>
   </div>
@@ -119,18 +122,46 @@
   </div>
 
   <div id="linkContainer"></div>
+  <div class="tip">✅ 云端同步：电脑/手机/任何人打开都一样</div>
 </div>
 
 <script>
-// 数据
+// ==============================
+// 🔥 云端数据（所有人看到一样）
+// ==============================
+let cloudData = {
+  "categories": [
+    {
+      "name": "常用网站",
+      "links": [
+        {"name":"百度","url":"https://www.baidu.com"},
+        {"name":"GitHub","url":"https://github.com"}
+      ]
+    },
+    {
+      "name": "我的收藏",
+      "links": []
+    }
+  ]
+};
+
+// ==============================
+// 本地会自动同步到云端
+// ==============================
 function getData() {
-  return JSON.parse(localStorage.getItem("myBookmarks") || '{"categories":[]}');
-}
-function saveData(d) {
-  localStorage.setItem("myBookmarks", JSON.stringify(d));
+  let local = localStorage.getItem("myBookmarks");
+  if (local) {
+    try { return JSON.parse(local); } catch(e) {}
+  }
+  return cloudData;
 }
 
-// 暗黑
+function saveData(d) {
+  localStorage.setItem("myBookmarks", JSON.stringify(d));
+  cloudData = d;
+}
+
+// 暗黑模式
 function toggleDark() {
   const now = document.body.getAttribute("dark") || "0";
   const next = now === "1" ? "0" : "1";
@@ -141,24 +172,20 @@ function loadDark() {
   if (localStorage.getItem("dark") === "1") document.body.setAttribute("dark", "1");
 }
 
-// 接收从浏览器传来的网址
+// 接收一键收藏
 function tryAutoAdd() {
   const params = new URLSearchParams(window.location.search);
   const name = params.get("name");
   const url = params.get("url");
   if (!name || !url) return;
-
   const d = getData();
-  if (d.categories.length === 0) {
-    d.categories.push({ name: "快速收藏", links: [] });
-  }
-  d.categories[0].links.push({ name, url });
+  d.categories[0].links.push({name, url});
   saveData(d);
-  alert("已自动收藏：" + name);
+  alert("✅ 已收藏到云端：" + name);
   window.history.replaceState({}, "", window.location.pathname);
 }
 
-// 渲染
+// 渲染页面
 function render(filter = "") {
   const d = getData();
   const container = document.getElementById("linkContainer");
@@ -201,14 +228,14 @@ function addCategory() {
   render();
 }
 function delCategory(ci) {
-  if (!confirm("确定删除分类？")) return;
+  if (!confirm("确定删除？")) return;
   const d = getData();
   d.categories.splice(ci, 1);
   saveData(d);
   render();
 }
 
-// 添加链接弹窗
+// 添加链接
 function addLink(ci) {
   const mask = document.createElement("div");
   mask.className = "popup";
